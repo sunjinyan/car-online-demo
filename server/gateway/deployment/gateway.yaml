@@ -1,0 +1,80 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: <APP_NAME>
+  #namespace: kube-system
+spec:
+  selector:
+    matchLabels:
+      app: <APP_NAME>
+  template:
+    metadata:
+      labels:
+        app: <APP_NAME>
+        version: <APP_TAG>
+    spec:
+      imagePullSecrets:
+        - name: registry-secret
+      containers:
+        - name: <APP_NAME>
+          image: registry.cn-beijing.aliyuncs.com/coolcar-code/<APP_NAME>:<APP_TAG>
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: ADDR
+              value: ":8081"
+            - name: AUTH_ADDR
+              valueFrom:
+                configMapKeyRef:
+                  name: endpoints
+                  key: auth
+            - name: TRIP_ADDR
+              valueFrom:
+                configMapKeyRef:
+                  name: endpoints
+                  key: trip
+            - name: PROFILE_ADDR
+              valueFrom:
+                configMapKeyRef:
+                  name: endpoints
+                  key: profile
+            - name: CAR_ADDR
+              valueFrom:
+                configMapKeyRef:
+                  name: endpoints
+                  key: car
+          resources:
+            limits:
+              memory: "128Mi"
+              cpu: "100m"
+          ports:
+            - containerPort: 8081
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8081
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            successThreshold: 1 #成功阈值，成功几次算探测成功，默认1
+            failureThreshold: 3 #失败阈值，失败几次视为探测失败，默认3
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: <APP_NAME>
+  namespace: default
+spec:
+  selector:
+    app: <APP_NAME>
+  ports:
+    - port: 8081
+      targetPort: 8081
+      appProtocol: http
+      name: http
+      protocol: TCP
+      
+#    - port: 15021
+#      targetPort: 15021
+#      name: http
+#      appProtocol: http

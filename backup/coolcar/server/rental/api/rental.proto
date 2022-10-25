@@ -1,0 +1,210 @@
+syntax = "proto3";
+
+package rental.v1;
+
+option  go_package="coolcar/rental/api/gen/v1;rentalpb";
+
+/**
+我们知道DDD中，Aggregate和面向对象的Class是不同的。虽然也讲究高内聚，但是Aggregate对粒度有苛刻的要求。
+一个Aggregate是一个事务一致性的边界。
+鉴定方法如下：
+如果一部分属性自身会随着时间改变，或者变化时这个属性集可以完全被替换，那么这些属性需要单独放到一个Value Object中，而不是放在Entity中。
+这样，Aggregate就包含了根entity和Value对象，Aggregate本身不是不变体，因为值对象经常被替换。但是Entity是不变体.
+trip是一个entity，只认id aggregate root
+entity的数据是可以改变的，但是不会因为改变了其他的值就说不再是这个entity了，因为entity只认root id，而不管是否具体的其他值变不变
+就算其他值都一样，但是id不同，那也是两个entity类型，其他值都不一样，但是root id相同，那么也说是属于同一个entity
+
+
+为什么LocationStatus是一个valueObject 而Trip却是Entity，并不是字段多就是Entity，比如最后将Trip内的Id标识拿出来，放入到
+TripEntity中，这样下来就会看出，并不是字段多就Entity
+*/
+//value object vs entity
+//举例:value object
+//a = 3 b = 3 ,两个变量，占据两个内存空间，我们认为a=b
+
+//a = 3 a = 4,a的值改变了
+
+//Location是value object
+//loc1 = (31,121)
+//loc2 = (31,121)
+//以上就是value object
+message Location {
+    double  latitude = 1;
+    double  longitude = 2;
+}
+
+message LocationStatus {
+    Location location = 1;
+    int32 fee_cent = 2;//应该是服务器计算的，不应该是填写的
+    double  km_driven = 3;//应该是服务器计算的，不应该是填写的
+    string  poi_name = 4;
+    int64 timestamp_sec = 5;
+}
+
+enum TripStatus {
+    TS_NOT_SPECIFIED = 0;//枚举类型一律要先定义一个0
+    IN_PROGRESS = 1;
+    FINISHED = 2;
+}
+
+//数据模型定义最好的办法就是把要定义的数据模型想象成Mysql数据库的表字段来进行设计
+//Entity与value object 最好的区分方法就是有没有标识来定义唯一的数据模型，
+//entity根据这个唯一标识来进行区分不同的entity其他的数据元素可以不同
+//value object则没有id唯一标识
+message TripEntity {
+    string id = 1;
+    Trip trip = 2;
+}
+
+
+/*首先定义数据模型，然后根据这个模型的所需包含的元素进行元素数据模型的定义*/
+message Trip {
+    string account_id = 1;
+    string car_id = 2;
+    LocationStatus start = 3;
+    LocationStatus current = 5;
+    LocationStatus end = 4;
+    TripStatus status = 6;
+    string identity_id = 7;
+}
+
+
+
+message CreateTripRequest{
+    //创建Trip的参数不应该是整个Trip参数，因为可能start里的钱不可以相信客户端输入
+    //谁填谁不填，应该怎么来决定呢？唯一原则就是不相信客户端输入，不给客户端犯错的机会,所以这里在创建一条Entity的时候，不应该由客户端决定过多
+    //Trip trip = 1;
+    Location start = 1;
+    string car_id = 2;
+    string  avatar_url = 3;
+    //account_id也不用传递，我自己解出来，因为可能是别人的account_id
+}
+
+//直接回一个Entity更省事
+//message CreateTripResponse{
+//    TripEntity trip = 1;
+//}
+message GetTripRequest{
+    string id = 1;
+}
+
+message GetTripsRequest{
+    //repeated string id = 1;//这里应该是id的集合吧？获取条件不同，也可以写多个rpc方法
+    TripStatus status = 1;//这里只为了满足根据状态去查找列表，不管是根据id还是根据状态，都可以不填，不填就是拿全部
+}
+
+message GetTripsResponse {
+    repeated TripEntity trips = 1;
+}
+
+message UpdateTripsRequest {
+    //TripEntity trip = 1;//和创建的时候思路一样，都不可以相信客户端输入
+    //不给客户端犯错的机会，所以这里只可以更新的是。。。，因为不可以更新trip里的钱，如果传递了Trip，那么服务器又不会更改，那么这样传递就
+    //显得多余，所以既然服务器不让修改也不去修改，那么就最好一开始告诉我客户端能改什么啊，不然浪费开销，不能说api什么字段都可以
+    string  id = 1;
+    Location  current = 2;
+    bool end_trip = 3;//汇报地点，并可以告诉服务器前端要结束行程了。
+}
+
+service TripService {
+    rpc CreateTrip (CreateTripRequest) returns (TripEntity);
+    rpc GetTrip (GetTripRequest) returns (Trip);//没必要返回ID？
+    rpc GetTrips (GetTripsRequest) returns (GetTripsResponse);
+    rpc UpdateTrip (UpdateTripsRequest) returns (Trip);
+}
+
+
+//Profile Service
+
+enum Gender {
+    G_NOT_SPECIFIED=0;
+    MALE=1;
+    FEMALE=2;
+}
+
+enum IdentityStatus {
+    UNSUBMITED = 0;
+}
+
+message  Identity {
+    string lic_number=1;
+    string name = 2;
+    Gender gender = 3;
+    int64 birth_date_millis = 4;
+}
+/**
+值类型 一个account_id 可以映射到的信息，给一个account_id可以联想到的事物
+实体 具有生命周期，可以一开始被创建、修改除id以外的字段、最后销毁或结束，具有时效比较短的周期性，因为实体具有生命周期，向服务器询问的时候需要
+返回具体的实体信息，没有需要报错，而值类型则返回空profile，所以Profile更倾向值类型，可以为空Profile而不是返回nil报错
+*/
+message Profile {
+    Identity identity = 1;
+
+    //需要参与很多业务逻辑,所以不写在Identity中
+    IdentityStatus identity_status = 2;
+}
+
+
+message GetProfileRequest {
+
+}
+
+message ClearProfileRequest{
+
+}
+
+
+message GetProfilePhotoRequest{
+
+}
+message GetProfilePhotoResponse{
+    string url = 1;
+}
+
+message CreateProfilePhotoRequest {
+
+}
+
+message CreateProfilePhotoResponse{
+    string upload_url = 1;
+}
+
+message CompleteProfilePhotoRequest {
+
+}
+//message CompleteProfilePhotoResponse{
+//    Identity identity = 1;
+//}
+
+message ClearProfilePhotoRequest {
+
+}
+
+message ClearProfilePhotoResponse {
+
+}
+
+
+message UploadFilePhotoRequest {
+    string file_name = 1;
+}
+
+message UploadFilePhotoResponse {
+    string url=1;
+}
+
+service ProfileService{
+    rpc GetProfile(GetProfileRequest) returns (Profile);
+    rpc SubmitProfile(Identity) returns (Profile);
+    rpc ClearProfile(ClearProfileRequest) returns (Profile);
+
+
+
+    rpc GetProfilePhoto(GetProfilePhotoRequest) returns (GetProfilePhotoResponse);
+    rpc CreateProfilePhoto(CreateProfilePhotoRequest) returns (CreateProfilePhotoResponse);
+    rpc CompleteProfilePhoto(CompleteProfilePhotoRequest) returns (Identity);
+    rpc ClearProfilePhoto (ClearProfilePhotoRequest) returns (ClearProfilePhotoResponse);
+
+
+    rpc UploadFilePhoto(UploadFilePhotoRequest) returns (UploadFilePhotoResponse);
+}

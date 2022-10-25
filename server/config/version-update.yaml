@@ -1,0 +1,33 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: auth-destination
+spec:
+  host: auth #在访问auth服务的时候还要去规定一下，具体的规定什么呢？就是下边的内容，在
+  #auth上规定一些subset，规定了什么样的服务才能算是v1、什么样的服务才能算是v2
+  subsets:
+    - name: v1
+      labels:
+        version: v1.1 #有version: v1.1label标签的pod算是v1版本
+    - name: v2
+      labels:
+        version: v2.0 #有version: v2.0label标签的pod算是v2版本
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: auth-rule
+spec:
+  hosts:
+    - "auth"
+  http:
+    - route:
+      - destination:
+            host: auth  #流量流向去往auth svc服务资源的方向
+            subset: v1 # 去往auth的流量还细化了子集，这时候就会去找对应描述操作auth的DestinationRule资源
+          #那里有具体规定，如上述DestinationRule资源
+        weight: 75
+      - destination:
+            host: auth
+            subset: v2
+        weight: 25

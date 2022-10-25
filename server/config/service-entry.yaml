@@ -1,0 +1,33 @@
+#k8s的 service entry资源，可以将外部资源包装成服务网格的内部资源
+#如将微信、阿里的第三方服务包装为项目服务网格内部的服务来使用
+#属于istio的扩展资源
+apiVersion: networking.istio.io/v1alpha3
+kind: ServiceEntry
+metadata:
+  name: weixin
+spec:
+  hosts:
+    - api.weixin.qq.com
+  ports:
+    - number: 443
+      name: https
+      protocol: HTTPS
+  location: MESH_EXTERNAL
+  resolution: DNS
+
+
+---
+
+apiVersion: networking.istio.io/v1alpha3
+kind: ServiceEntry
+metadata:
+  name: oss
+spec:
+  hosts:
+    - oss-cn-beijing.aliyuncs.com
+  ports:
+    - number: 443
+      name: https
+      protocol: HTTPS
+  location: MESH_EXTERNAL
+  resolution: DNS

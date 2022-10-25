@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mooc-demo
+  labels:
+    app: mooc-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mooc-demo
+  template:
+    metadata:
+      labels:
+        app: mooc-demo
+        version: v1.2
+    spec:
+      containers:
+        - name: mooc-demo
+          image: ccr.ccs.tencentyun.com/coolcar/coolenv:1.2
+          imagePullPolicy: IfNotPresent
+          resources:
+            limits:
+              memory: "512Mi"
+              cpu: "300m"
+          ports:
+            - containerPort: 5672
+              hostPort: 5672
+            - containerPort: 15672
+              hostPort: 15672
+            - containerPort: 18000
+              hostPort: 18000
+            - containerPort: 27017
+              hostPort: 27017
+            - containerPort: 18001
+              hostPort: 18001
+          env:
+            - name: ICODE
+              value: J00D0E09262FE00FF
+          volumeMounts:
+            - name: mooc-mount
+              mountPath:  /data/db
+      volumes:
+        - name: mooc-mount
+          hostPath:
+            path: /Users/sunjinyan/mongo/data
+            type: DirectoryOrCreate
+      # nodeSelector:
+      #   IMooc: "true"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mooc-demo
+spec:
+  selector:
+    app: mooc-demo
+  ports:
+    - name: grpc
+      protocol: TCP
+      port: 18001
+    - name: http
+      protocol: TCP
+      port: 18000
+    - name: tcp-rabbit
+      protocol: TCP
+      port: 5672
+    - name: tcp-rabbit-admin
+      protocol: TCP
+      port: 15672
+    - name: mongo
+      protocol: TCP
+      port: 27017
+  type: ClusterIP

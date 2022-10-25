@@ -1,0 +1,28 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: coolcar-gateway
+spec:
+  hosts: # 对谁做，对发给所有后端的请求，blob、car、auth、rental、gateway 这些svc资源
+    - "*"
+  gateways:
+    - coolcar-gateway
+  http: #做什么，就是做以下的内容
+    - match:
+        - uri:
+            prefix: /ws
+      route: #到哪里去，规定的到哪里去
+        - destination:
+            port:
+              number: 8080
+            host: car
+    - route:
+        - destination:
+            port:
+              number: 8081
+            host: gateway
+#  一、定义
+#  gateway和VirtualService的关系
+#  gateway：定义了服务从外面怎么访问，在入口处对服务进行统一治理。
+#  VirtualService：定义了匹配到的内部服务怎么流转。
+#  配合gateway的使用，修改VirtualService，在host上匹配gateway上请求的主机名，并通过gateways字段关联定义的gateway对象

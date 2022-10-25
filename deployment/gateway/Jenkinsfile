@@ -1,0 +1,27 @@
+pipeline{
+    agent any
+    stages{
+        stage("Checkout"){
+            steps{
+              git branch: 'main',url:'git@gitlab.dreaminglifes.com:root/server.git'
+              echo "Checkout ok!"
+            }
+        }
+        stage("Build Go"){
+            steps{
+                sh "go build ./gateway/..."
+                echo "Build ok!"
+            }
+        }
+        stage("Build Docker"){
+            steps{
+                echo "Build Docker ok!"
+            }
+        }
+        stage("Build K8s"){
+             steps{
+                echo "Build K8s ok!"
+             }
+         }
+    }
+}

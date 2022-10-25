@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+
+kind: Deployment
+
+metadata:
+  name: blob
+  labels:
+    app: blob
+
+spec:
+
+   replicas: 1
+
+   selector:
+      matchLabels:
+        app: blob
+   
+   template:
+     spec:
+       imagePullSecret: registry-secret
+       containers:
+       -    name: blob
+            imagePullSecret: IfNotPresent
+            image: registry.cn-beijing.aliyuncs.com/coolcar-code/blob:1.0
+
+
+            resources:
+              limits:
+                memory: "128Mi"
+                cpu: "30m"
+            ports:
+              - containerPort: 8081
+
+            env:
+            - name: MONGO_URI
+              valueFrom:
+                configMapKeyRef:
+                  key: mongo
+                  name: endpoints
+            - name: OSS_ADDR
+              valueFrom:
+               secretKeyRef:
+                 key: url
+                 name: oss
+            - name: OSS_ACCESS_KEY_ID
+              valueFrom:
+               secretKeyRef:
+                 key: oss_access_key_id
+                 name: oss
+            - name: OSS_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  key: oss_secret_key
+                  name: oss
+
+---
+
+
+apiVersion: v1
+
+kind: Service
+
+metadata:
+   name: blob
+
+spec:
+  selector:
+     app: blob
+
+  ports:
+  -  name: blob
+     port: 8081
+     protocol: TCP
+     targetPort: 8081
+  type: ClusterIP

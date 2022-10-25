@@ -1,0 +1,117 @@
+pipeline{
+    agent any
+    environment{
+       APP_NAME="gateway"
+       DOCKER_CODE_NAMESPACE="coolcar-code"
+       APP_ENV="main"
+       GIT_COMMIT=sh(returnStdout:true,script: "git describe --tags --always").trim()
+       APP_TAG="${env.APP_ENV}-${env.GIT_COMMIT}"
+    }
+    triggers{ 
+       gitlab(
+       branchFilterType: 'All',
+       triggerOnPush: true,
+       triggerOnMergeRequest: true,
+       secretToken:('4cd6975912b410f88a8c418c18ad127b'))
+    }
+    options{
+      gitLabConnection("gitlab-jenkins")
+    }
+    stages{
+        stage("Print Build Info ENV"){
+           steps{
+               echo env.APP_NAME
+               echo env.APP_ENV
+               echo env.GIT_COMMIT
+               echo env.APP_TAG
+               echo env.DOCKER_CODE_NAMESPACE
+               echo 'print ok!'
+           }
+        }
+        stage("Checkout Main"){
+            when{
+              //branch 'main'
+              allOf{
+               branch 'main'
+               //expression { BRANCH_NAME == ~/(production|staging)/}
+               //enviroment name:'DEPLOY_TO',value:'production'
+               //enviroment name:'DEPLOY_TO',value:'staging'
+             }
+            }
+            steps{
+              git branch: 'main',url:'git@gitlab.dreaminglifes.com:root/server.git'
+              echo "Checkout Main  ok!"
+            }
+        }
+        stage("Checkout Test"){
+            when{
+              branch 'test'
+            }
+            steps{
+              git branch: 'main',url:'git@gitlab.dreaminglifes.com:root/server.git'
+              echo "Checkout Test ok!"
+            }
+        }
+        stage("Build Go"){
+            steps{
+                sh "go install ./gateway/..."
+                echo "Build Go ok!"
+            }
+        }
+        stage("Build Docker main"){
+            when{
+              allOf{
+                branch 'main'
+              }
+            }
+            steps{
+               //script{
+                    sh "docker build -t registry.cn-beijing.aliyuncs.com/${env.DOCKER_CODE_NAMESPACE}/${env.APP_NAME}:${env.APP_TAG}  --build-arg APPNAME=${env.APP_NAME}  -f ./${env.APP_NAME}/deployment/Dockerfile ."
+                    sh "docker push registry.cn-beijing.aliyuncs.com/${env.DOCKER_CODE_NAMESPACE}/${env.APP_NAME}:${env.APP_TAG}"
+                    echo "Build & Push Docker main ok!"
+               //}
+            }
+        }
+        stage("Build Docker test"){
+             when{
+              allOf{
+                branch 'test'
+              }
+            }
+            steps{
+                echo "Build Docker test ok!"
+            }
+        }
+        stage("Build K8s main"){
+            when{
+              //allOf{
+               branch "main"
+              //}
+            }
+            steps{
+                 echo  "Build K8s Second"
+                script{
+                    //大写?
+                    def UserSelect = input id: 'UserSelect', message: 'Choose a selection', ok: 'Confirm', parameters: [choice(choices:['main'], description: "Choose a selection", name: "Env")]
+                    echo "${UserSelect}"
+                    sh "sed -i 's|<APP_NAME>|${env.APP_NAME}|g' ./${env.APP_NAME}/deployment/${env.APP_NAME}.yaml"
+                    sh "sed -i 's|<APP_TAG>|${env.APP_TAG}|g' ./${env.APP_NAME}/deployment/${env.APP_NAME}.yaml"
+                    sh "/bin/kubectl apply -f ./${env.APP_NAME}/deployment/${env.APP_NAME}.yaml -n default"
+                    //sh "istioctl kube-inject -f  ./${env.APP_NAME}/deployment/${env.APP_NAME}.yaml | kubectl apply -f -"
+                    echo "Build K8s ok!"
+                }
+            }
+         }
+    }
+    post{
+        always{
+            mail to: '13683234298@163.com',subject: 'status of pipeline:${currentBuild.fullDisplayName}',body: "${env.BUILD_URL} has result ${currentBuild.result}"
+        }
+        failure{
+            updateGitlabCommitStatus name: 'build', state: 'failed'
+        }
+        success{
+            updateGitlabCommitStatus name: 'build', state: 'success'
+        }
+    }
+}

@@ -1,0 +1,83 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rental
+  labels:
+    app: rental
+
+spec:
+   
+   selector:
+     matchLabels:
+       app: rental
+   
+   replicas: 1
+
+   template:
+     spec:
+       imagePullSecret: registry-secret
+       containers:
+       -  name: rental
+          imagePullPolicy: IfNotPresent
+          image: registry.cn-beijing.aliyuncs.com/coolcar-code/rental:1.0
+
+          ports:
+            - containerPort: 8081
+
+          resources:
+            limits:
+              cpu: "30m"
+              memory: "128Mi"
+          env:
+          - name: MONGO_URI
+            valueFrom:
+              configMapKeyRef:
+                key: mongo
+                name: endpoints
+          - name: CAR_ADDR
+            valueFrom:
+              configMapKeyRef:
+                key: car
+                name: endpoints
+          - name: BLOB_ADDR
+            valueFrom:
+              configMapKeyRef:
+                key: blob
+                name: endpoints
+          - name: AI_ADDR
+            valueFrom:
+              configMapKeyRef:
+                key: ai
+                name: endpoints
+          - name: AUTH_PUBLIC_KEY_FILE
+            value: /sec/public.key
+          volumeMounts:
+          - mountPath: /sec
+            name: auth
+            readOnly: true
+       volumes:
+        - name: auth
+          secret:
+            secretName: auth
+            items:
+              - key: publickey
+                path: public.key
+---
+
+apiVersion: v1
+
+kind: Service
+
+metadata:
+   app: rental
+
+spec:
+  metadata:
+     app: rental
+
+  ports:
+  - name: rental
+    protocol: TCP
+    port: 8081
+    targetPort: 8081
+  type: ClusterIP

@@ -1,0 +1,47 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: auth
+type: Opaque
+#Secret 对象的名称必须是合法的 DNS 子域名。 在为创建 Secret 编写配置文件时，你可以设置 data 与/或 stringData 字段。
+#data 和 stringData 字段都是可选的。data 字段中所有键值都必须是 base64 编码的字符串。如果不希望执行这种 base64
+#字符串的转换操作，你可以选择设置 stringData 字段，其中可以使用任何字符串作为其取值。
+stringData:
+  privatekey: |
+    -----BEGIN RSA PRIVATE KEY-----
+    MIIEoQIBAAKCAQBrmeIGadQcHS0rrhvLBlSOWQyAdUctpFj/8mCu9LSoGcmONeoa
+    s/PmdLMFAcweyq/6W4Z5qcnniQKAdoH5QLyyThQ5nCz7J2W3ftVnVe3ReQ/koWEL
+    a0Tl1stI9PbUu0oZTSH3spTyk6GhI1z/ApiOPEQFEplKPNQ13FM2Aqzr5mvQG43I
+    ocLq0CiINyK5H09LyglYJaJ1XSHsY/NbF/3g5CvoNuxgHLx9k8hfN7zT14Jz4eqc
+    GjEuDFw6mT4qFKVjOMFVx6j7H5aCpUHheafHQJYc3LCY8pY4SdpDv5TPob489j2s
+    /1p8lpa4nqrfxByehzNFJhRiBYa1R4oIPmWvAgMBAAECggEAE1xM3vqLv8NALWvW
+    dGFfNX2wUizH8d5wZR0naFN/bf+11HC+/q8CY6T70RrRr3io0VNGjv2N5qswWAz6
+    te6ABVUnLnZ7YXVlR+76Vu2PLPGremfPHk7exrwvN6FcCErqukK2qeroAf2uR2Al
+    i3zcFjuhwYfnLQRk6owKLN2uX4OKKvibd/OyvxuMyg+OGfib4ReCMkHTdNX7lZKl
+    Wrxu3O+DdITwslzL/xat8FzZ5Ydp9x29WDJqE4A7JknQN4ub7X7U9oWcPgFRQ8mD
+    8rTojByExo8HX036dxcRdyDbapL1RHvHQuKRDT6BS1ACXrZPw45xysTq6CHrBWH3
+    P5krAQKBgQC5YwOAZDBN4HCgLxZjU3oAMMbz5L1Gr+lxRw9jLfC8uvCRSTWxOLfk
+    fP3v+S3fSLwUSw5BsGdRZPP4wqUX4jQCzibsp+EH4pJhdvwinJXcM9Tb4TV7KF3V
+    67m5Ix7EtJhrsyVyPlxPVD4BFD8ta1Im6Hk6CHUEhoxiHkxa6JGZdwKBgQCUlgWA
+    s6h0SO8UNcbz/PJLa988JHiPYedZjnGA8xs8beOeAdGHwrczywjiUahiLlXL+h0z
+    u8TjIXJh8AfOt9Dtwq/S04hvsXC9ceVk0msE3f3xviz8KZrKnBLla/QfZst/L3sX
+    LzR/32lKDZfPzjit8STIaFAG4+Du8FENvmgjiQKBgBf1mgA/8pY+CZBKRaR0p3Ha
+    2/utdmDqX0tKmcyBpXle17SPN6c941ZeaRtYovsWlWgyAxeuSswUNgvSbC/YBkzO
+    g+1WDRlNyQlbrV5zylJ5SGtageT25Jm/K3On/FQD2ycgMhi/woJmKtVM3pVqJ2Xr
+    6a78ZNM+6GnN7KRbJmYlAoGAVg+aulPU4x2HVHZdeN5uXF7rmsMpDStQu590gJLO
+    mK6xYsh82xxdzmLwD13qoItj6FRC6777J+8seCt16javjbbw7bTV1pO40BGTI1V4
+    5QXLW2SiW5+hZ28ExttDN5jrjwwqSGBwEQyOyHSdFKDGVYFRo74/c+4zT1HkMIiz
+    erkCgYB+tMxXYst33DNhMz0cmQUnOa983IOlAUbhuRybsLohYZWV20WioykIjoDK
+    DXZ73RmR+suKOqfT4itlG9QUW39EtGS4nApF2ivfptP5f2vXaMtwPO50ZGsSjsAi
+    FdQFmCPLofxzsPdGlL01bqgupT5Yd75lDLhvrFM7kfLGj8mx4A==
+    -----END RSA PRIVATE KEY-----
+  publickey: |
+    -----BEGIN PUBLIC KEY-----
+    MIIBITANBgkqhkiG9w0BAQEFAAOCAQ4AMIIBCQKCAQBrmeIGadQcHS0rrhvLBlSO
+    WQyAdUctpFj/8mCu9LSoGcmONeoas/PmdLMFAcweyq/6W4Z5qcnniQKAdoH5QLyy
+    ThQ5nCz7J2W3ftVnVe3ReQ/koWELa0Tl1stI9PbUu0oZTSH3spTyk6GhI1z/ApiO
+    PEQFEplKPNQ13FM2Aqzr5mvQG43IocLq0CiINyK5H09LyglYJaJ1XSHsY/NbF/3g
+    5CvoNuxgHLx9k8hfN7zT14Jz4eqcGjEuDFw6mT4qFKVjOMFVx6j7H5aCpUHheafH
+    QJYc3LCY8pY4SdpDv5TPob489j2s/1p8lpa4nqrfxByehzNFJhRiBYa1R4oIPmWv
+    AgMBAAE=
+    -----END PUBLIC KEY-----

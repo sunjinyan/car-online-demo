@@ -1,0 +1,19 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: coolcar-gateway
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+    - port:
+        number: 80
+        name: http
+        protocol: HTTP
+      hosts:
+        - "*"
+#  一、定义
+#  gateway和VirtualService的关系
+#  gateway：定义了服务从外面怎么访问，在入口处对服务进行统一治理。
+#  VirtualService：定义了匹配到的内部服务怎么流转。
+#  配合gateway的使用，修改VirtualService，在host上匹配gateway上请求的主机名，并通过gateways字段关联定义的gateway对象

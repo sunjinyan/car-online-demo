@@ -1,0 +1,9 @@
+type: google.api.Service
+config_version: 3
+
+http:
+  rules:
+    - selector: coolcar.TripService.GetTrip
+      get: /trip/{id}
+      #post: /trip/{id}
+      #body: "*"

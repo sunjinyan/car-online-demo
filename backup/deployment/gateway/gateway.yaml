@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+
+kind: Deployment
+metadata:
+  name: gateway
+  labels:
+    app: gateway
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gateway
+  template:
+    metadata:
+      labels:
+        app: gateway
+        version: "v1.0"
+    spec:
+      imagePullSecrets:
+        - name: registry-secret
+      containers:
+      - name: gateway
+        image: registry.cn-beijing.aliyuncs.com/coolcar-code/gateway:1.0
+        imagePullPolicy: IfNotPresent
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "30m"
+        env:
+        - name: AUTH_ADDR
+          valueFrom:
+            configMapKeyRef:
+              key: auth
+              name: endpoints
+        ports:
+        - containerPort: 8080 #需要和Dockerfile里面声明的EXPOSE端口对应
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+          initialDelaySeconds: 5 #启动5秒之后
+          periodSeconds: 5  #每5秒检测一次
+
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gateway
+spec:
+  selector:
+    app: gateway
+  ports:
+    - name: http
+      protocol: TCP
+      appProtocol: https
+      port: 80
+      targetPort: 8080 #需要和containerPort: 8080对应 如果省略则默认值与port一样
+  type: ClusterIP  
+  #ExternalName     
+  #ClusterIP          
+  #NodePort 在node上开一个port和pod里的port做一个映射 设计的本意是为了集群的资源在内网使用而不是内网，如果NodePort的Pod所在的IP没有内网，那么网布也就无法访问了
+  #LoabBalancer  在NodePort之上建立的，所以NodePort的端口还会在
+
+  #service 上的就叫port  container上的相对于container叫containerProt  ports:- containerPort: 8080，相对于service叫target port （目标），node port实际物理port

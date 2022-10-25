@@ -1,0 +1,74 @@
+pipeline{
+    agent any
+    triggers{
+       gitlab(
+       branchFilterType: 'All',
+       triggerOnPush: true,
+       triggerOnMergeRequest: true,
+       secretToken:('4cd6975912b410f88a8c418c18ad127b'))
+    }
+    options{
+      gitLabConnection("gitlab-jenkins")
+    }
+    stages{
+        stage("Checkout Main"){
+            when{
+             allOf{
+               branch 'main'
+               expression { BRANCH_NAME == ~/(production|staging)/}
+               enviroment name:'DEPLOY_TO',value:'production'
+               enviroment name:'DEPLOY_TO',value:'staging'
+             }
+            }
+            steps{
+              git branch: 'main',url:'git@gitlab.dreaminglifes.com:root/server.git'
+              echo "Checkout Main  ok!"
+            }
+        }
+        stage("Checkout Test"){
+            when{
+              branch 'test'
+            }
+            steps{
+              git branch: 'main',url:'git@gitlab.dreaminglifes.com:root/server.git'
+              echo "Checkout Test ok!"
+            }
+        }
+        stage("Checkout Blue"){
+            when{
+              branch 'blue'
+            }
+            steps{
+              git branch: 'main',url:'git@gitlab.dreaminglifes.com:root/server.git'
+              echo "Checkout Bule ok!"
+            }
+        }
+        stage("Build Go"){
+            steps{
+                sh "go install ./gateway/..."
+                echo "Build ok!"
+            }
+        }
+        stage("Build Docker"){
+            steps{
+                echo "Build Docker ok!"
+            }
+        }
+        stage("Build K8s"){
+             steps{
+                echo "Build K8s ok!"
+             }
+         }
+    }
+    post{
+        always{
+            mail to: '13683234298@163.com',subject: 'status of pipeline:${currentBuild.fullDisplayName}',body: "${env.BUILD_URL} has result ${currentBuild.result}"
+        }
+        failure{
+            updateGitlabCommitStatus name: 'build', state: 'failed'
+        }
+        success{
+            updateGitlabCommitStatus name: 'build', state: 'success'
+        }
+    }
+}

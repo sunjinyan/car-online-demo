@@ -1,0 +1,87 @@
+apiVersion: apps/v1
+
+kind: Deployment
+
+metadata:
+    name: auth
+    labels:
+        app: auth
+spec:
+  replicas: 1
+
+
+  selector:
+     mathcLabels:
+        app: auth
+
+  template:
+    metadata:
+      labels:
+        app: auth
+
+    spec:
+      imagePullSecrets:
+        - name: registry-secret
+      containers:
+      -  name: auth
+         image: registry.cn-beijing.aliyuncs.com/coolcar-code/auth:1.0
+         imagePullPolicy: IfNotPresent
+         resources:
+           limits:
+             memory: "128Mi"
+             cpu: "30m"
+         env:
+           - name: MONGO_URI
+             valueFrom:
+               configMapKeyRef:  #configMap 与 secret区别， secret属于保密性数据，只是base64得加解密，而configMap属于普通类型配置信息
+                 key: mongo
+                 name: endpoints
+           - name: WECAHT_APP_ID
+             valueFrom:
+                secretKeyRef:
+                  key: appid
+                  name: wechat
+           - name: WECHAT_APP_SECRET
+             valueFrom:
+                secretKeyRef:
+                  key: appsecret
+                  name: wechat
+           - name: PRIVATE_KEY_FILE
+             value: /sec/private.key
+         volumeMounts:
+           - mountPath: /sec
+             name: auth
+             readOnly: true
+         ports:
+           - containerPort: 8081
+         livenessProbe:
+           exec:
+             command: ["/bin/grpc-health-probe","-addr=:8081"]
+             initialDelaySeconds: 5
+      volumes:
+        - name: auth
+          secret:
+             secretName: auth
+             items:
+               - key: privatekey
+                 path: private.key
+               - key: publickey
+                 path: public.key
+    
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth
+
+spec:
+  selector:
+    app: auth
+    
+  ports:
+    - name: http
+      port: 8081
+      targetPort: 8081
+      protocol: TCP
+  type: ClusterIP

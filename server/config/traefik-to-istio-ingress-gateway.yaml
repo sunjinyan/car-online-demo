@@ -1,0 +1,31 @@
+#K8sIngressResources-To-Istio-IngressGateway_TraefikReverseProxy
+#使用traefik 反向代理的功能，根据使用配合K8s的Ingress资源来进行反向代理到
+#k8s种的svc资源，该svc资源必须是istio的服务网格的网关svc，也就是在istio-system
+#命名空间下的istio-ingressgateway资源
+#  流量流转说明：
+#  外网用户访问->域名解析->集群绑定的反向代理服务traefik,
+#  该traefik采用的是配合k8s内部资源Ingress的方式来实现与k8s内部svc资源建立联系->k8s的Ingress资源
+#  ->Istio Ingress Gateway，Istio对外开放的统一入口，该svc是通过配置了traefik的Ingress反向代理建立关系
+#  ->流入到Istio网关内部->Istio的Gateways资源承接流量->匹配到Istio的VirtualService资源，
+#  如果存在Istio的DestinationRule匹配规则，就遵循DestinationRule的规则访问，如果没有DestinationRule资源，
+#  就根据Istio的VirtualService进行匹配后端的服务SideCar进行流量转发到Istio-Proxy
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: traefik-coolcar-ingress
+  namespace: istio-system
+  annotations:
+    kubernetes.io/ingress.class: traefik
+    traefik.ingress.kubernetes.io/router.entrypoints: web
+spec:
+  rules:
+    - host: coolcar.dreaminglifes.com
+      http:
+        paths:
+          - pathType: Prefix
+            path: /
+            backend:
+              service:
+                name: istio-ingressgateway
+                port:
+                  number: 80

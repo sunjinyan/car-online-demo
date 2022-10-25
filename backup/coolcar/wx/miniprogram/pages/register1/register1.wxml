@@ -1,0 +1,5 @@
+<view class="container">
+    <image src="/resources/lic.png" class="lic-tmpl"/>
+    <view class="cuIcon-camerafill lg text-gray"></view>
+    <view >请上传驾照</view>
+</view>

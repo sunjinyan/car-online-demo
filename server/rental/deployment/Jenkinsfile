@@ -1,0 +1,89 @@
+pipeline {
+  agent any
+  environment {
+    APP_NAME="rental"
+    DOCKER_CODE_NAMESPACE="coolcar-code"
+    APP_ENV="rental"
+    GIT_COMMIT_TAG=sh(returnStdout:true,script:"git describe --tags --alway").trim()
+    APP_TAG="${env.APP_ENV}-${env.GIT_COMMIT_TAG}"
+  }
+  options {
+    gitLabConnection("gitlab-jenkins")
+  }
+  triggers{
+     gitlab(
+                branchFilterType: 'All',
+                triggerOnPush: true,
+                triggerOnMergeRequest: true,
+                secretToken:('4cd6975912b410f88a8c418c18ad127b')
+            )
+  }
+  post{
+      always{
+          mail to: '13683234298@163.com',subject: 'status of pipeline:${currentBuild.fullDisplayName}',body: "${env.BUILD_URL} has result ${currentBuild.result}"
+      }
+      failure{
+          updateGitlabCommitStatus name: 'build', state: 'failed'
+      }
+      success{
+          updateGitlabCommitStatus name: 'build', state: 'success'
+      }
+  }
+  stages {
+    stage("Print env"){
+      steps{
+        echo env.APP_NAME
+        echo env.APP_ENV
+        echo env.GIT_COMMIT
+        echo env.APP_TAG
+        echo env.DOCKER_CODE_NAMESPACE
+        echo 'print ok!'
+      }
+    }
+    stage("Checkout"){
+      when{
+        allOf{
+          branch "main"
+        }
+      }
+      steps{
+          git branch:"main" ,url:"git@gitlab.dreaminglifes.com:root/server.git"
+          echo "Checkout main Ok!"
+      }
+    }
+    stage("Install Go"){
+        when{
+          allOf{
+            branch "main"
+          }
+        }
+        steps{
+            sh(returnStdout:false,script:"go install ./rental/...")
+            echo "Install go Ok!"
+        }
+    }
+    stage("Build Docker & Push Image"){
+        when{
+            branch "main"
+        }
+        steps{
+            sh "docker build -t registry.cn-beijing.aliyuncs.com/${env.DOCKER_CODE_NAMESPACE}/${env.APP_NAME}:${env.APP_TAG} --build-arg APPNAME=${env.APP_NAME} -f ./${env.APP_NAME}/deployment/Dockerfile ."
+            sh "docker push registry.cn-beijing.aliyuncs.com/${env.DOCKER_CODE_NAMESPACE}/${env.APP_NAME}:${env.APP_TAG}"
+            echo "Build & Push Image Ok!"
+        }
+    }
+    stage("Deployment"){
+        steps{
+            script{
+              def UserSelector = input id: "UserSelector",message: "Choose a selection",ok: "Accept", parameters: [choice(choices:  ["main"],name: "env",description: "Choose a selection")]
+              echo "${UserSelector}"
+              sh "sed -i 's|<APP_NAME>|${env.APP_NAME}|g' ./${env.APP_NAME}/deployment/${env.APP_NAME}.yaml"
+              sh "sed -i 's|<APP_TAG>|${env.APP_TAG}|g' ./${env.APP_NAME}/deployment/${env.APP_NAME}.yaml"
+              sh "kubectl apply -f ./${env.APP_NAME}/deployment/${env.APP_NAME}.yaml"
+              //sh "istioctl kube-inject -f  ./${env.APP_NAME}/deployment/${env.APP_NAME}.yaml | kubectl apply -f -"
+              echo "Build K8s ok!"
+            }
+        }
+    }
+  }
+}

@@ -1,0 +1,27 @@
+pipeline{
+    agent any
+    stages{
+        stage("Checkout Conf"){
+            steps{
+                git branch: "main",url: 'git@gitlab.dreaminglifes.com:root/server.git'
+                echo "Apply CM Ok!"
+            }
+        }
+        stage("Apply K8s CM"){
+            steps{
+                script{
+                    def UserSelector = input (id:"UserSelector",message:"Please select this env",ok:"Accept",parameters:[choice(choices:["prod"],name:"env",description:"Please select this env")])
+                    echo "${UserSelector}"
+                    sh "/bin/kubectl apply -f ./config/conf.yaml"
+                    echo "apply conf Ok!"
+                    sh "/bin/kubectl apply -f ./config/jwt.yaml"
+                    echo "apply jwt Ok!"
+                    sh "/bin/kubectl apply -f ./config/oss.yaml"
+                    echo "apply oss Ok!"
+                    sh "/bin/kubectl apply -f ./config/wechat.yaml"
+                    echo "apply wechat Ok!"
+                }
+            }
+        }
+    }
+}

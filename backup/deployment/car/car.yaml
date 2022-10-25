@@ -1,0 +1,77 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: car
+  labels:
+    app: car
+
+spec:
+   
+   selector:
+     matchLabels:
+       app: car
+   
+   replicas: 1
+
+   template:
+     spec:
+       imagePullSecret: registry-secret
+       containers:
+       -  name: car
+          imagePullPolicy: IfNotPresent
+          image: registry.cn-beijing.aliyuncs.com/coolcar-code/car:1.0
+
+          ports:
+            - containerPort: 8081
+
+          resources:
+            limits:
+              cpu: "30m"
+              memory: "128Mi"
+          env:
+          - name: MONGO_URI
+            valueFrom:
+              configMapKeyRef:
+                key: mongo
+                name: endpoints
+          - name: AMQP_URL
+            valueFrom:
+              configMapKeyRef:
+                key: amqp
+                name: endpoints
+          - name: CAR_ADDR
+            valueFrom:
+              configMapKeyRef:
+                key: car
+                name: endpoints
+          - name: TRIP_ADDR
+            valueFrom:
+              configMapKeyRef:
+                key: trip
+                name: endpoints
+          - name: AI_ADDR
+            valueFrom:
+              configMapKeyRef:
+                key: ai
+                name: endpoints
+---
+
+apiVersion: v1
+
+kind: Service
+
+metadata:
+   app: car
+
+spec:
+  metadata:
+     app: car
+
+  ports:
+  - name: grpc
+    protocol: TCP
+    port: 8081
+  - name: http
+    protocol: TCP
+    port: 8080
+  type: ClusterIP

@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: endpoints
+data:
+  #mongo: mongodb://47.93.20.75:27017/coolcar?readPreference=primary&ssl=false
+  mongo: mongodb://mooc-demo:27017/coolcar?readPreference=primary&ssl=false
+  amqp: amqp://guest:guest@mooc-demo:5672
+  #ai: coolenv:18001
+  ai: mooc-demo:18001
+  auth: auth:8081
+  car: car:8081
+  blob: blob:8081
+  trip: rental:8081
+  profile: rental:8081
